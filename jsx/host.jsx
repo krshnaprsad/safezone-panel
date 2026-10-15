@@ -33,14 +33,45 @@ function aeOverlayLayers(comp) {
   return out;
 }
 
-function aeFootage(file) {
+var SZ_FOLDER = "SafeZone Overlays";
+
+function aeFolder() {
   var i;
   for (i = 1; i <= app.project.numItems; i++) {
     var it = app.project.item(i);
-    if (it instanceof FootageItem && it.mainSource instanceof FileSource && it.file && it.file.fsName === file.fsName) return it;
+    if (it instanceof FolderItem && it.name === SZ_FOLDER) return it;
   }
-  var io = new ImportOptions(file);
-  return app.project.importFile(io);
+  return app.project.items.addFolder(SZ_FOLDER);
+}
+
+// Reuse the footage already in the project (matched by file name) instead of importing again.
+function aeFootage(file, name) {
+  var i, found = null;
+  for (i = 1; i <= app.project.numItems; i++) {
+    var it = app.project.item(i);
+    if (it instanceof FootageItem && it.name === name) { found = it; break; }
+  }
+  if (found) {
+    try { found.replace(file); } catch (e) {}   // refresh in case the overlay design changed
+    return found;
+  }
+  var item = app.project.importFile(new ImportOptions(file));
+  try { item.parentFolder = aeFolder(); } catch (e2) {}
+  return item;
+}
+
+// Delete SAFEZONE footage that no layer uses any more. Keeps the project panel clean.
+function aeCleanUnused(keepName) {
+  var i, n = 0;
+  for (i = app.project.numItems; i >= 1; i--) {
+    var it = app.project.item(i);
+    if (it instanceof FootageItem && it.name.indexOf(SZ_PREFIX) === 0 && it.name !== keepName) {
+      var used = 0;
+      try { used = it.usedIn.length; } catch (e) { used = 1; }
+      if (used === 0) { try { it.remove(); n++; } catch (e2) {} }
+    }
+  }
+  return n;
 }
 
 function aeShow(filePath) {
@@ -61,7 +92,7 @@ function aeShow(filePath) {
     var old = aeOverlayLayers(comp), i;
     for (i = old.length - 1; i >= 0; i--) { old[i].locked = false; old[i].remove(); }
     step = "import image";
-    var item = aeFootage(file);
+    var item = aeFootage(file, name);
     if (!item) throw new Error("import returned nothing");
     step = "add layer";
     var layer = comp.layers.add(item);
@@ -81,6 +112,8 @@ function aeShow(filePath) {
     step = "lock";
     try { layer.locked = true; } catch (e4) {}
     layer.enabled = true;
+    step = "tidy project";
+    try { aeCleanUnused(name); } catch (e6) {}
     app.endUndoGroup();
     return "OK|" + platform + " overlay on (guide layer)|";
   } catch (e) {
@@ -103,8 +136,10 @@ function aeRemove() {
   var ls = aeOverlayLayers(comp), i;
   app.beginUndoGroup("Remove safe zone overlay");
   for (i = ls.length - 1; i >= 0; i--) { ls[i].locked = false; ls[i].remove(); }
+  var cleaned = 0;
+  try { cleaned = aeCleanUnused(""); } catch (e) {}
   app.endUndoGroup();
-  return "OK|Overlay removed";
+  return "OK|Overlay removed" + (cleaned ? " (" + cleaned + " unused image" + (cleaned > 1 ? "s" : "") + " cleared from project)" : "");
 }
 
 function aeStatus() {
@@ -166,7 +201,13 @@ function ppShow(filePath) {
 
   var item = ppFindItem(app.project.rootItem, name);
   if (!item) {
-    app.project.importFiles([file.fsName], true, app.project.getInsertionBin(), false);
+    var bin = null, bi;
+    for (bi = 0; bi < app.project.rootItem.children.numItems; bi++) {
+      var ch = app.project.rootItem.children[bi];
+      if (ch.type === 2 && ch.name === "SafeZone Overlays") bin = ch;
+    }
+    if (!bin) { try { bin = app.project.rootItem.createBin("SafeZone Overlays"); } catch (eb) {} }
+    app.project.importFiles([file.fsName], true, bin || app.project.getInsertionBin(), false);
     item = ppFindItem(app.project.rootItem, name);
   }
   if (!item) return szErr("Could not import the overlay into the project.");
