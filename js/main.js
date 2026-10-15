@@ -2,11 +2,18 @@
   var NAMES = { PPRO: "Premiere Pro", AEFT: "After Effects", none: "Preview (no host)" };
   var $ = function (s) { return document.querySelector(s); };
   var buttons = document.querySelectorAll(".plat");
-  var variant = $("#variant"), styleSel = $("#style"), status = $("#status"), warn = $("#warn"), preview = $("#preview");
+  var variant = $("#variant"), styleSel = $("#style"), colorSel = $("#color"), hexIn = $("#hex"), hexRow = $("#hexrow"), status = $("#status"), warn = $("#warn"), preview = $("#preview");
   var active = null;      // platform key currently shown, or null
   var selected = "reels"; // platform shown in the preview thumbnail
 
   function q(s) { return '"' + String(s).replace(/\\/g, "/").replace(/"/g, '\\"') + '"'; }
+  function currentColor() {
+    if (colorSel.value === "custom") {
+      var v = hexIn.value.replace(/^#?/, "#");
+      return /^#[0-9a-fA-F]{6}$/.test(v) ? v.toUpperCase() : "";
+    }
+    return colorSel.value;
+  }
   function setStatus(t) { status.textContent = t; }
   function setWarn(t) { warn.textContent = t || ""; }
 
@@ -17,7 +24,7 @@
     }
   }
   function refreshPreview() {
-    preview.src = Overlay.render(selected, variant.value, false, styleSel.value).toDataURL("image/png");
+    preview.src = Overlay.render(selected, variant.value, false, styleSel.value, currentColor()).toDataURL("image/png");
   }
 
   window.onerror = function (msg) { setStatus("Something went wrong."); setWarn("Panel error: " + msg); };
@@ -45,8 +52,9 @@
       var landscape = Number(sz[0]) > Number(sz[1]);
       var st = styleSel.value;
       var token = st === "ui" ? "ui" : (st === "both" ? variant.value + "ui" : variant.value);
-      var name = Overlay.fileName(p, token, landscape);
-      var path = Bridge.writePng(Overlay.render(p, variant.value, landscape, st).toDataURL("image/png"), name);
+      var col = currentColor();
+      var name = Overlay.fileName(p, token, landscape).replace(/\.png$/, col ? "_" + col.slice(1) + ".png" : ".png");
+      var path = Bridge.writePng(Overlay.render(p, variant.value, landscape, st, col).toDataURL("image/png"), name);
       if (!path) { setStatus("Something went wrong."); setWarn("Could not write the overlay image to your user data folder."); return; }
       run("szShow", [q(path)], function (r) {
         active = p; refreshButtons(); setStatus(r[0] || "Overlay shown.");
@@ -58,6 +66,7 @@
   for (var i = 0; i < buttons.length; i++) {
     (function (b) { b.addEventListener("click", function () { onPlatform(b.getAttribute("data-p")); }); })(buttons[i]);
   }
+  function onColor() { hexRow.style.display = colorSel.value === "custom" ? "flex" : "none"; onStyleOrVariant(); }
   function onStyleOrVariant() {
     variant.disabled = styleSel.value === "ui";
     refreshPreview();
@@ -67,6 +76,8 @@
   }
   variant.addEventListener("change", onStyleOrVariant);
   styleSel.addEventListener("change", onStyleOrVariant);
+  colorSel.addEventListener("change", onColor);
+  hexIn.addEventListener("change", onStyleOrVariant);
   $("#remove").addEventListener("click", function () {
     if (!Bridge.hasHost) { active = null; refreshButtons(); setStatus("Demo: overlay removed."); return; }
     run("szRemove", [], function (r) { active = null; refreshButtons(); setStatus(r[0] || "Overlay removed."); });
