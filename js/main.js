@@ -55,7 +55,7 @@
       var col = currentColor();
       var name = Overlay.fileName(p, token, landscape).replace(/\.png$/, col ? "_" + col.slice(1) + ".png" : ".png");
       var path = Bridge.writePng(Overlay.render(p, variant.value, landscape, st, col).toDataURL("image/png"), name);
-      if (!path) { setStatus("Something went wrong."); setWarn("Could not write the overlay image to your user data folder."); return; }
+      if (!path) { setStatus("Something went wrong."); setWarn("Could not write the overlay image. Details: " + Bridge.lastError()); return; }
       run("szShow", [q(path)], function (r) {
         active = p; refreshButtons(); setStatus(r[0] || "Overlay shown.");
         setWarn(r[1] || "");
