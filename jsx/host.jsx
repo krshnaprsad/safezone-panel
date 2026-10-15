@@ -214,6 +214,9 @@ function ppShow(filePath) {
   if (track && seq.videoTracks[seq.videoTracks.numTracks - 1] !== track) track = null;
 
   var item = ppFindItem(app.project.rootItem, name);
+  if (item) { // same file name, new pixels: make Premiere re-read the file
+    try { item.refreshMedia(); } catch (er) {}
+  }
   if (!item) {
     var bin = null, bi;
     for (bi = 0; bi < app.project.rootItem.children.numItems; bi++) {
