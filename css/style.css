@@ -22,3 +22,5 @@ select{flex:1;font:inherit;color:var(--text);background:var(--panel);border:1px 
 .status{margin:0 0 6px;color:var(--dim);min-height:17px}
 .warn{margin:0;color:#e0a040}
 input[type=text]{flex:1;font:inherit;color:var(--text);background:var(--panel);border:1px solid var(--line);border-radius:4px;padding:5px}
+.live{margin:0 0 8px;padding:8px 10px;border-radius:5px;background:#e5173f;color:#fff;font-weight:700;animation:szp 1s infinite alternate}
+@keyframes szp{from{opacity:1}to{opacity:.55}}
