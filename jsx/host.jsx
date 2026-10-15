@@ -233,9 +233,16 @@ function ppShow(filePath) {
   if (placed) {
     try { var t = new Time(); t.ticks = seq.end; placed.end = t; } catch (e3) {}
     placed.disabled = false;
-  }
-  if (size[1] !== 1920 && size[1] !== 1080) {
-    warn = "Sequence is " + size[0] + "x" + size[1] + ". Overlay is 1080p-based: if it looks the wrong size, set Preferences > Media > Default Media Scaling to Set to Frame Size, or scale the clip.";
+    try {
+      var comps = placed.components, ci, pi;
+      for (ci = 0; ci < comps.numItems; ci++) {
+        if (comps[ci].displayName === "Motion") {
+          for (pi = 0; pi < comps[ci].properties.numItems; pi++) {
+            if (comps[ci].properties[pi].displayName === "Scale") { try { comps[ci].properties[pi].setValue(100, true); } catch (es) {} }
+          }
+        }
+      }
+    } catch (e4) {}
   }
   warn += (warn ? " " : "") + "Premiere has no guide layers: click the button again to hide the overlay before you export.";
   return "OK|" + platform + " overlay on|" + warn;
