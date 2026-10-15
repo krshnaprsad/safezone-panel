@@ -209,6 +209,9 @@ function ppShow(filePath) {
   var old = ppOverlayClips(seq), i;
   var track = null;
   for (i = old.length - 1; i >= 0; i--) { track = old[i].track; old[i].clip.remove(false, false); }
+  // Re-use the old overlay track only while it is still the top track; otherwise add a new top one,
+  // so clicking the button always brings the overlay in front of anything added since.
+  if (track && seq.videoTracks[seq.videoTracks.numTracks - 1] !== track) track = null;
 
   var item = ppFindItem(app.project.rootItem, name);
   if (!item) {
