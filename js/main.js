@@ -65,7 +65,10 @@
 
   function syncStatus() {
     if (!Bridge.hasHost) return;
-    run("szStatus", [], function (r) {
+    Bridge.evalScript("szStatus()", function (res) {
+      var r = String(res || "").split("|");
+      if (r[0] !== "OK") return; // stay quiet, status sync is best effort
+      r = r.slice(1);
       // r = ["none"] or [platform, variant, "1"|"0"]
       if (r[0] !== "none" && r[2] === "1") { active = r[0]; selected = r[0]; if (r[1]) variant.value = r[1]; }
       else active = null;
