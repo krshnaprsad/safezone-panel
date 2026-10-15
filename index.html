@@ -29,6 +29,23 @@
 </section>
 
 <section class="opts">
+  <label for="color">Color</label>
+  <select id="color">
+    <option value="">Default (pink / white)</option>
+    <option value="#FFFFFF">White</option>
+    <option value="#000000">Black</option>
+    <option value="#FFE600">Yellow</option>
+    <option value="#39FF88">Green</option>
+    <option value="#00D2FF">Cyan</option>
+    <option value="custom">Custom hex...</option>
+  </select>
+</section>
+<section class="opts" id="hexrow" style="display:none">
+  <label for="hex">Hex</label>
+  <input id="hex" type="text" maxlength="7" value="#FF8800" spellcheck="false">
+</section>
+
+<section class="opts">
   <label for="variant">Zones</label>
   <select id="variant">
     <option value="official">Official ad guide (safest)</option>
