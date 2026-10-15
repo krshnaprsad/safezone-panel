@@ -20,7 +20,7 @@ Red shading is the area the app covers. The white outline is the safe area. Numb
 | TikTok | 240 | 660 | 120 | 120 | Button rail: right margin grows to 300 below y=840 |
 | YouTube Shorts | 288 | 672 | 48 | 192 | |
 
-The panel has a **Style** dropdown: safe-zone shading (default), **App UI icons** (thin wireframe outlines of the like / comment / share rail, avatar, username, caption and so on), or both. Reels wireframe positions are traced from a real Reels screenshot; TikTok and Shorts wireframes are approximate. Move or resize elements in `drawUI` in [`js/overlay.js`](js/overlay.js).
+The panel has a **Style** dropdown: safe-zone shading (default), **App UI icons** (thin wireframe outlines of the like / comment / share rail, avatar, username, caption and so on), or both. Reels and Shorts wireframe positions are traced from real app screenshots. TikTok follows CapQA's measured organic layout (button rail x 918-1080, y 730-1536; bottom block from y 1570), with icon spacing inside those bounds estimated. The top Shorts search/menu icons and title sit outside the 9:16 video, so they are not drawn. Move or resize elements in `drawUI` in [`js/overlay.js`](js/overlay.js).
 
 Each platform has two zone modes in the panel:
 
