@@ -54,7 +54,15 @@
       var token = st === "ui" ? "ui" : (st === "both" ? variant.value + "ui" : variant.value);
       var col = currentColor();
       var name = Overlay.fileName(p, token, landscape).replace(/\.png$/, col ? "_" + col.slice(1) + ".png" : ".png");
-      var path = Bridge.writePng(Overlay.render(p, variant.value, landscape, st, col).toDataURL("image/png"), name);
+      var cv = Overlay.render(p, variant.value, landscape, st, col);
+      var sw = Math.round(Number(sz[0])), sh = Math.round(Number(sz[1]));
+      // Premiere places a PNG at its native pixel size, so bake the overlay at the sequence's own size.
+      if (Bridge.hostName() === "PPRO" && sw > 0 && sh > 0 && (sw !== cv.width || sh !== cv.height)) {
+        var cv2 = document.createElement("canvas"); cv2.width = sw; cv2.height = sh;
+        cv2.getContext("2d").drawImage(cv, 0, 0, sw, sh);
+        cv = cv2; name = name.replace(/\.png$/, "_" + sw + "x" + sh + ".png");
+      }
+      var path = Bridge.writePng(cv.toDataURL("image/png"), name);
       if (!path) { setStatus("Something went wrong."); setWarn("Could not write the overlay image. Details: " + Bridge.lastError()); return; }
       run("szShow", [q(path)], function (r) {
         active = p; refreshButtons(); setStatus(r[0] || "Overlay shown.");
