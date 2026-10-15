@@ -60,7 +60,7 @@ function ppWorld(w, h) {
   const kids = [];
   const rootItem = { children: new Proxy({ get numItems() { return kids.length; } }, { get: (o, k) => (k in o ? o[k] : kids[k]) }) };
   const app = { name: "Adobe Premiere Pro", enableQE() {}, project: { activeSequence: seq, rootItem, getInsertionBin: () => rootItem,
-    importFiles(p) { kids.push({ name: path.basename(p[0]), type: 1 }); } } };
+    importFiles(p) { kids.push({ name: path.basename(p[0]), type: 1, changeMediaPath(np) { this.name = path.basename(np); return true; }, refreshMedia() {} }); } } };
   const qe = { project: { getActiveSequence: () => ({ addTracks() { const t = mkTrack(); t.clips = clipsProxy(t); tracks.push(t); } }) } };
   return { app, tracks, extra: { qe } };
 }
@@ -79,6 +79,9 @@ p.tracks.push((function(){ const t = { clips: { _a: [], get numItems() { return 
 c.szShow(png("SAFEZONE_reels_official_landscape.png"));
 assert.strictEqual(p.tracks[p.tracks.length - 1].clips._a.length, 1);
 c.szRemove(); assert.strictEqual(c.szStatus(), "OK|none");
+{ const q = ppWorld(736, 1422); const cq = sandbox(q.app, q.extra);
+  cq.szShow(png("SAFEZONE_tiktok_overlay_portrait_111.png")); cq.szShow(png("SAFEZONE_tiktok_overlay_portrait_222.png"));
+  assert.strictEqual(q.app.project.rootItem.children.numItems, 1); assert.strictEqual(q.app.project.rootItem.children[0].name, "SAFEZONE_tiktok_overlay_portrait_222.png"); }
 console.log("host.jsx logic tests passed");
 { const w2 = aeWorld(1080, 1920); const c2 = sandbox(w2.app, w2.extra); assert.strictEqual(c2.szSize(), "OK|1080|1920"); }
 console.log("szSize ok");
