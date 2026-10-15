@@ -190,6 +190,16 @@ function ppFindItem(folder, name) {
   return null;
 }
 
+function ppFindPrefix(folder, prefix) {
+  var i;
+  for (i = 0; i < folder.children.numItems; i++) {
+    var ch = folder.children[i];
+    if (ch.type === 2) { var f = ppFindPrefix(ch, prefix); if (f) return f; }
+    else if (ch.name && ch.name.indexOf(prefix) === 0) return ch;
+  }
+  return null;
+}
+
 function ppSeqSize(seq) {
   try { return [seq.frameSizeHorizontal, seq.frameSizeVertical]; } catch (e) {}
   try { var s = seq.getSettings(); return [s.videoFrameWidth, s.videoFrameHeight]; } catch (e2) {}
@@ -213,9 +223,13 @@ function ppShow(filePath) {
   // so clicking the button always brings the overlay in front of anything added since.
   if (track && seq.videoTracks[seq.videoTracks.numTracks - 1] !== track) track = null;
 
-  var item = ppFindItem(app.project.rootItem, name);
-  if (item) { // same file name, new pixels: make Premiere re-read the file
-    try { item.refreshMedia(); } catch (er) {}
+  // One project item per platform. Each generation is written to a NEW file name (Premiere caches by path),
+  // and the existing item is re-pointed at it with changeMediaPath, so the bin never grows.
+  var item = ppFindPrefix(app.project.rootItem, "SAFEZONE_" + platform + "_overlay_");
+  var repointed = false;
+  if (item) {
+    try { repointed = item.changeMediaPath(file.fsName, true) !== false; } catch (er) { repointed = false; }
+    if (repointed) { try { item.refreshMedia(); } catch (er2) {} } else { item = null; }
   }
   if (!item) {
     var bin = null, bi;
