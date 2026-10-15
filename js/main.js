@@ -62,8 +62,10 @@
       if (Bridge.hostName() === "PPRO" && sw > 0 && sh > 0 && (sw !== cv.width || sh !== cv.height)) {
         var cv2 = document.createElement("canvas"); cv2.width = sw; cv2.height = sh;
         cv2.getContext("2d").drawImage(cv, 0, 0, sw, sh);
-        cv = cv2; name = name.replace(/\.png$/, "_" + sw + "x" + sh + ".png");
+        cv = cv2;
       }
+      // Premiere cannot delete project items, so use ONE fixed file per platform and refresh it in place.
+      if (Bridge.hostName() === "PPRO") name = "SAFEZONE_" + p + "_overlay_" + (landscape ? "landscape" : "portrait") + ".png";
       var path = Bridge.writePng(cv.toDataURL("image/png"), name);
       if (!path) { setStatus("Something went wrong."); setWarn("Could not write the overlay image. Details: " + Bridge.lastError()); return; }
       run("szShow", [q(path)], function (r) {
@@ -104,7 +106,7 @@
       if (r[0] !== "OK") return; // stay quiet, status sync is best effort
       r = r.slice(1);
       // r = ["none"] or [platform, variant, "1"|"0"]
-      if (r[0] !== "none" && r[2] === "1") { active = r[0]; selected = r[0]; if (r[1] === "ui") { styleSel.value = "ui"; } else if (r[1]) { var both = /ui$/.test(r[1]); styleSel.value = both ? "both" : "zones"; variant.value = r[1].replace(/ui$/, ""); } variant.disabled = styleSel.value === "ui"; }
+      if (r[0] !== "none" && r[2] === "1") { active = r[0]; selected = r[0]; if (r[1] === "overlay") { /* Premiere: one fixed file per platform, style is not encoded */ } else if (r[1] === "ui") { styleSel.value = "ui"; } else if (r[1]) { var both = /ui$/.test(r[1]); styleSel.value = both ? "both" : "zones"; variant.value = r[1].replace(/ui$/, ""); } variant.disabled = styleSel.value === "ui"; }
       else active = null;
       refreshButtons(); refreshPreview();
     });
