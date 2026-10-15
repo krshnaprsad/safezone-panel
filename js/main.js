@@ -65,10 +65,11 @@
         cv = cv2;
       }
       // Premiere cannot delete project items, so use ONE fixed file per platform and refresh it in place.
-      if (Bridge.hostName() === "PPRO") name = "SAFEZONE_" + p + "_overlay_" + (landscape ? "landscape" : "portrait") + ".png";
+      if (Bridge.hostName() === "PPRO") name = "SAFEZONE_" + p + "_overlay_" + (landscape ? "landscape" : "portrait") + "_" + Date.now() + ".png";
       var path = Bridge.writePng(cv.toDataURL("image/png"), name);
       if (!path) { setStatus("Something went wrong."); setWarn("Could not write the overlay image. Details: " + Bridge.lastError()); return; }
       run("szShow", [q(path)], function (r) {
+        if (Bridge.hostName() === "PPRO") Bridge.cleanOld(path, "SAFEZONE_" + p + "_overlay_");
         active = p; refreshButtons(); setStatus(r[0] || "Overlay shown.");
         setWarn(r[1] || "");
       });
