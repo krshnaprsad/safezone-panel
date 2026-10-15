@@ -5,7 +5,7 @@ A small panel for **Adobe Premiere Pro** and **After Effects** that shows where 
 ![Panel](docs/panel.svg)
 
 - **After Effects:** the overlay is added as a locked **guide layer**. Guide layers are not rendered by default, so it cannot end up in your export.
-- **Premiere Pro:** the overlay is placed on a new top video track. Premiere has no guide layers, so click the button again to hide it (the clip is disabled and will not export). **Hide it before you export.**
+- **Premiere Pro:** the overlay is placed on a new top video track. Premiere has no guide layers, so click the button again to hide it (the clip is disabled and will not export). **Hide it before you export.** The clip is named `!! SAFEZONE - HIDE BEFORE EXPORT !!`, gets a red project label, and the panel shows a flashing red banner while it is on. Adobe gives plug-ins no way to hook the start of an export, so nothing can block or warn at export time. This is a limit of Premiere, not something we can add.
 - Works on vertical sequences (1080x1920) and on 16:9 sequences (the 9:16 frame is drawn centred, with the outside dimmed).
 
 ## What the overlay shows
@@ -53,7 +53,7 @@ The installer copies the panel to Adobe's per-user extensions folder and turns o
 3. Keep captions, faces and logos inside the white outline.
 4. Click the same button again to hide it, or **Remove overlay** to delete it.
 
-If the sequence is not 1080p based (for example 4K), the overlay may look the wrong size. In Premiere set **Preferences > Media > Default Media Scaling** to **Set to Frame Size**, or scale the clip.
+In Premiere the overlay image is generated at your sequence size, so any resolution works. In After Effects the layer is scaled to the comp.
 
 ## Where the overlay image goes
 
