@@ -81,3 +81,7 @@ docs/                    README images
 ```
 
 MIT licensed.
+
+## Premiere project bin
+
+Premiere does not let plug-ins delete project items. So in Premiere the panel uses one file per platform and platform orientation (`SAFEZONE_reels_overlay_portrait.png`, and so on), overwrites it when you change style, zones or colour, and asks Premiere to refresh it. You end up with at most one item per platform in the "SafeZone Overlays" bin. Items made by older versions of the panel stay until you delete them yourself (select them in the bin and press Delete). Not verified on a real Premiere: whether refresh always picks up the new pixels. If an old look stays after you change a setting, right-click the item and choose Refresh Media, or click Remove overlay and turn it on again.
