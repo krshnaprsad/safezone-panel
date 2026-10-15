@@ -2,7 +2,7 @@
   var NAMES = { PPRO: "Premiere Pro", AEFT: "After Effects", none: "Preview (no host)" };
   var $ = function (s) { return document.querySelector(s); };
   var buttons = document.querySelectorAll(".plat");
-  var variant = $("#variant"), status = $("#status"), warn = $("#warn"), preview = $("#preview");
+  var variant = $("#variant"), styleSel = $("#style"), status = $("#status"), warn = $("#warn"), preview = $("#preview");
   var active = null;      // platform key currently shown, or null
   var selected = "reels"; // platform shown in the preview thumbnail
 
@@ -17,7 +17,7 @@
     }
   }
   function refreshPreview() {
-    preview.src = Overlay.render(selected, variant.value, false).toDataURL("image/png");
+    preview.src = Overlay.render(selected, variant.value, false, styleSel.value).toDataURL("image/png");
   }
 
   function run(fn, args, done) {
@@ -39,8 +39,10 @@
     }
     run("szSize", [], function (sz) {
       var landscape = Number(sz[0]) > Number(sz[1]);
-      var name = Overlay.fileName(p, variant.value, landscape);
-      var path = Bridge.writePng(Overlay.render(p, variant.value, landscape).toDataURL("image/png"), name);
+      var st = styleSel.value;
+      var token = st === "ui" ? "ui" : (st === "both" ? variant.value + "ui" : variant.value);
+      var name = Overlay.fileName(p, token, landscape);
+      var path = Bridge.writePng(Overlay.render(p, variant.value, landscape, st).toDataURL("image/png"), name);
       if (!path) { setStatus("Something went wrong."); setWarn("Could not write the overlay image to your user data folder."); return; }
       run("szShow", [q(path)], function (r) {
         active = p; refreshButtons(); setStatus(r[0] || "Overlay shown.");
@@ -52,12 +54,15 @@
   for (var i = 0; i < buttons.length; i++) {
     (function (b) { b.addEventListener("click", function () { onPlatform(b.getAttribute("data-p")); }); })(buttons[i]);
   }
-  variant.addEventListener("change", function () {
+  function onStyleOrVariant() {
+    variant.disabled = styleSel.value === "ui";
     refreshPreview();
     if (active && Bridge.hasHost) {
       var p = active; active = null; onPlatform(p);
     }
-  });
+  }
+  variant.addEventListener("change", onStyleOrVariant);
+  styleSel.addEventListener("change", onStyleOrVariant);
   $("#remove").addEventListener("click", function () {
     if (!Bridge.hasHost) { active = null; refreshButtons(); setStatus("Demo: overlay removed."); return; }
     run("szRemove", [], function (r) { active = null; refreshButtons(); setStatus(r[0] || "Overlay removed."); });
@@ -70,7 +75,7 @@
       if (r[0] !== "OK") return; // stay quiet, status sync is best effort
       r = r.slice(1);
       // r = ["none"] or [platform, variant, "1"|"0"]
-      if (r[0] !== "none" && r[2] === "1") { active = r[0]; selected = r[0]; if (r[1]) variant.value = r[1]; }
+      if (r[0] !== "none" && r[2] === "1") { active = r[0]; selected = r[0]; if (r[1] === "ui") { styleSel.value = "ui"; } else if (r[1]) { var both = /ui$/.test(r[1]); styleSel.value = both ? "both" : "zones"; variant.value = r[1].replace(/ui$/, ""); } variant.disabled = styleSel.value === "ui"; }
       else active = null;
       refreshButtons(); refreshPreview();
     });
