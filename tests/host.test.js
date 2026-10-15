@@ -34,7 +34,7 @@ function aeWorld(w, h) {
 }
 let w = aeWorld(1080, 1920);
 let c = sandbox(w.app, w.extra);
-assert.strictEqual(c.szShow(png("SAFEZONE_reels_official_portrait.png")), "OK|reels overlay on (guide layer)|");
+assert.strictEqual(c.szShow(png("SAFEZONE_reels_official_portrait.png")), "OK|reels overlay on (guide layer, verified: it will not render)|");
 assert.strictEqual(w.layers.length, 1); assert.ok(w.layers[0].guideLayer); assert.ok(w.layers[0].comment.includes("reels_official_portrait"));
 assert.strictEqual(w.layers[0].props["ADBE Scale"].v[0], 100);
 assert.strictEqual(c.szStatus(), "OK|reels|official|1");
@@ -50,7 +50,7 @@ w = aeWorld(10, 10); w.app.project.activeItem = null; c = sandbox(w.app, w.extra
 // ---- Premiere fake
 function ppWorld(w, h) {
   const mkTrack = () => { const t = { clips: { _a: [], get numItems() { return this._a.length; } } };
-    t.overwriteClip = function (item) { const a = this.clips._a; const cl = { name: item.name, disabled: false, remove() { a.splice(a.indexOf(this), 1); } }; a.push(cl); a[a.length - 1] = cl; };
+    t.overwriteClip = function (item) { const a = this.clips._a; const cl = { name: item.name, projectItem: item, disabled: false, remove() { a.splice(a.indexOf(this), 1); } }; a.push(cl); a[a.length - 1] = cl; };
     return t; };
   const tracks = [mkTrack()];
   const clipsProxy = t => new Proxy(t.clips, { get: (o, k) => (k in o ? o[k] : o._a[k]) });
@@ -69,7 +69,8 @@ c = sandbox(p.app, p.extra);
 let r = c.szShow(png("SAFEZONE_tiktok_official_landscape.png"));
 assert.ok(r.startsWith("OK|tiktok overlay on|"), r);
 assert.strictEqual(p.tracks.length, 2);
-assert.strictEqual(p.tracks[1].clips._a[0].name, "SAFEZONE_tiktok_official_landscape.png");
+assert.strictEqual(p.tracks[1].clips._a[0].name, "!! SAFEZONE - HIDE BEFORE EXPORT !!");
+assert.strictEqual(p.tracks[1].clips._a[0].projectItem.name, "SAFEZONE_tiktok_official_landscape.png");
 assert.strictEqual(c.szStatus(), "OK|tiktok|official|1");
 c.szHide(); assert.strictEqual(c.szStatus(), "OK|tiktok|official|0");
 c.szShow(png("SAFEZONE_reels_official_landscape.png")); assert.strictEqual(p.tracks[1].clips._a.length, 1); assert.strictEqual(p.tracks.length, 2);
