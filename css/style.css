@@ -21,3 +21,4 @@ select{flex:1;font:inherit;color:var(--text);background:var(--panel);border:1px 
 .ghost{width:100%;background:transparent}
 .status{margin:0 0 6px;color:var(--dim);min-height:17px}
 .warn{margin:0;color:#e0a040}
+input[type=text]{flex:1;font:inherit;color:var(--text);background:var(--panel);border:1px solid var(--line);border-radius:4px;padding:5px}
