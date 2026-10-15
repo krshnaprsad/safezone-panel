@@ -20,7 +20,9 @@ Red shading is the area the app covers. The white outline is the safe area. Numb
 | TikTok | 240 | 660 | 120 | 120 | Button rail: right margin grows to 300 below y=840 |
 | YouTube Shorts | 288 | 672 | 48 | 192 | |
 
-Each platform has two modes in the panel:
+The panel has a **Style** dropdown: safe-zone shading (default), **App UI icons** (thin wireframe outlines of the like / comment / share rail, avatar, username, caption and so on), or both. Reels wireframe positions are traced from a real Reels screenshot; TikTok and Shorts wireframes are approximate. Move or resize elements in `drawUI` in [`js/overlay.js`](js/overlay.js).
+
+Each platform has two zone modes in the panel:
 
 - **Official ad guide (default, safest).** Taken from the platforms' own ad guides and templates: Meta Ads Guide (14% top, 35% bottom, 6% sides), TikTok Ads Manager In-Feed template, Google Ads Help vertical video guidance.
 - **Organic, measured in app.** Tighter margins measured from the live apps. The platforms publish no official numbers for normal posts, so treat these as a guide.
