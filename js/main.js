@@ -18,6 +18,8 @@
   function setWarn(t) { warn.textContent = t || ""; }
 
   function refreshButtons() {
+    var liveBox = document.getElementById("live");
+    if (liveBox) liveBox.style.display = (active && Bridge.hostName() === "PPRO") ? "block" : "none";
     for (var i = 0; i < buttons.length; i++) {
       var on = buttons[i].getAttribute("data-p") === active;
       buttons[i].className = "plat" + (on ? " on" : "");
