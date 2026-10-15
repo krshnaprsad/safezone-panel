@@ -1,0 +1,234 @@
+// ExtendScript for Premiere Pro (PPRO) and After Effects (AEFT). ES3 only.
+// Every function returns "OK|message|optional warning" or "ERR|message".
+
+var SZ_PREFIX = "SAFEZONE_";
+
+function szIsAE() { return app.name.indexOf("After Effects") !== -1; }
+
+function szErr(m) { return "ERR|" + m; }
+
+function szBaseName(path) { return String(path).replace(/^.*[\\\/]/, ""); }
+
+// "SAFEZONE_reels_official_portrait.png" -> "reels|official"
+function szParse(name) {
+  var m = /^SAFEZONE_([a-z]+)_([a-z]+)_(portrait|landscape)/.exec(name);
+  return m ? m[1] + "|" + m[2] : "none";
+}
+
+/* ---------------- After Effects ---------------- */
+
+function aeComp() {
+  var c = app.project.activeItem;
+  return (c && c instanceof CompItem) ? c : null;
+}
+
+function aeOverlayLayers(comp) {
+  var out = [], i;
+  for (i = 1; i <= comp.numLayers; i++) {
+    var l = comp.layer(i);
+    if (l.comment && l.comment.indexOf(SZ_PREFIX) === 0) out.push(l);
+  }
+  return out;
+}
+
+function aeFootage(file) {
+  var i;
+  for (i = 1; i <= app.project.numItems; i++) {
+    var it = app.project.item(i);
+    if (it instanceof FootageItem && it.mainSource instanceof FileSource && it.file && it.file.fsName === file.fsName) return it;
+  }
+  var io = new ImportOptions(file);
+  return app.project.importFile(io);
+}
+
+function aeShow(filePath) {
+  var comp = aeComp();
+  if (!comp) return szErr("Open a composition and click on it first.");
+  var name = szBaseName(filePath);
+  var platform = szParse(name).split("|")[0];
+  var file = new File(filePath);
+  if (!file.exists) return szErr("Overlay file missing: " + file.fsName);
+  app.beginUndoGroup("Safe zone overlay");
+  try {
+    var old = aeOverlayLayers(comp), i;
+    for (i = old.length - 1; i >= 0; i--) { old[i].locked = false; old[i].remove(); }
+    var item = aeFootage(file);
+    var layer = comp.layers.add(item);
+    layer.name = "SAFEZONE " + platform + " (guide)";
+    layer.comment = name;
+    layer.guideLayer = true;      // guide layers do not render by default
+    layer.inPoint = 0;
+    layer.outPoint = comp.duration;
+    layer.moveToBeginning();
+    var s = 100 * comp.height / item.height;
+    layer.property("Transform").property("Scale").setValue([s, s]);
+    layer.property("Transform").property("Position").setValue([comp.width / 2, comp.height / 2]);
+    layer.locked = true;
+    layer.enabled = true;
+    app.endUndoGroup();
+    return "OK|" + platform + " overlay on (guide layer)|";
+  } catch (e) {
+    app.endUndoGroup();
+    return szErr(e.toString());
+  }
+}
+
+function aeHide() {
+  var comp = aeComp();
+  if (!comp) return szErr("Open a composition and click on it first.");
+  var ls = aeOverlayLayers(comp), i;
+  for (i = 0; i < ls.length; i++) { ls[i].locked = false; ls[i].enabled = false; ls[i].locked = true; }
+  return "OK|Overlay hidden";
+}
+
+function aeRemove() {
+  var comp = aeComp();
+  if (!comp) return szErr("Open a composition and click on it first.");
+  var ls = aeOverlayLayers(comp), i;
+  app.beginUndoGroup("Remove safe zone overlay");
+  for (i = ls.length - 1; i >= 0; i--) { ls[i].locked = false; ls[i].remove(); }
+  app.endUndoGroup();
+  return "OK|Overlay removed";
+}
+
+function aeStatus() {
+  var comp = aeComp();
+  if (!comp) return "OK|none";
+  var ls = aeOverlayLayers(comp);
+  if (!ls.length) return "OK|none";
+  return "OK|" + szParse(ls[0].comment) + "|" + (ls[0].enabled ? "1" : "0");
+}
+
+/* ---------------- Premiere Pro ---------------- */
+
+function ppSeq() { return app.project ? app.project.activeSequence : null; }
+
+function ppOverlayClips(seq) {
+  var out = [], t, c;
+  for (t = 0; t < seq.videoTracks.numTracks; t++) {
+    var tr = seq.videoTracks[t];
+    for (c = 0; c < tr.clips.numItems; c++) {
+      var clip = tr.clips[c];
+      if (clip.name && clip.name.indexOf(SZ_PREFIX) === 0) out.push({ track: tr, index: t, clip: clip });
+    }
+  }
+  return out;
+}
+
+function ppFindItem(folder, name) {
+  var i;
+  for (i = 0; i < folder.children.numItems; i++) {
+    var ch = folder.children[i];
+    if (ch.name === name) return ch;
+    if (ch.type === 2) { // bin
+      var f = ppFindItem(ch, name);
+      if (f) return f;
+    }
+  }
+  return null;
+}
+
+function ppSeqSize(seq) {
+  try { return [seq.frameSizeHorizontal, seq.frameSizeVertical]; } catch (e) {}
+  try { var s = seq.getSettings(); return [s.videoFrameWidth, s.videoFrameHeight]; } catch (e2) {}
+  return [0, 0];
+}
+
+function ppShow(filePath) {
+  var seq = ppSeq();
+  if (!seq) return szErr("Open a sequence and click on its timeline first.");
+  var size = ppSeqSize(seq);
+  var name = szBaseName(filePath);
+  var platform = szParse(name).split("|")[0];
+  var file = new File(filePath);
+  if (!file.exists) return szErr("Overlay file missing: " + file.fsName);
+
+  // Remove any previous overlay clip (keeps timeline tidy, one overlay at a time)
+  var old = ppOverlayClips(seq), i;
+  var track = null;
+  for (i = old.length - 1; i >= 0; i--) { track = old[i].track; old[i].clip.remove(false, false); }
+
+  var item = ppFindItem(app.project.rootItem, name);
+  if (!item) {
+    app.project.importFiles([file.fsName], true, app.project.getInsertionBin(), false);
+    item = ppFindItem(app.project.rootItem, name);
+  }
+  if (!item) return szErr("Could not import the overlay into the project.");
+
+  if (!track) {
+    // Try to add a fresh top video track so nothing of yours gets overwritten.
+    try {
+      app.enableQE();
+      var qs = qe.project.getActiveSequence();
+      var n = seq.videoTracks.numTracks;
+      qs.addTracks(1, n, 0, 0, 0, 0, 0, 0);
+    } catch (e) {}
+    track = seq.videoTracks[seq.videoTracks.numTracks - 1];
+  }
+  track.overwriteClip(item, 0);
+
+  // find the clip we just placed and stretch it across the sequence
+  var placed = null, c;
+  for (c = 0; c < track.clips.numItems; c++) {
+    if (track.clips[c].name === name) placed = track.clips[c];
+  }
+  var warn = "";
+  if (placed) {
+    try { var t = new Time(); t.ticks = seq.end; placed.end = t; } catch (e3) {}
+    placed.disabled = false;
+  }
+  if (size[1] !== 1920 && size[1] !== 1080) {
+    warn = "Sequence is " + size[0] + "x" + size[1] + ". Overlay is 1080p-based: if it looks the wrong size, set Preferences > Media > Default Media Scaling to Set to Frame Size, or scale the clip.";
+  }
+  warn += (warn ? " " : "") + "Premiere has no guide layers: click the button again to hide the overlay before you export.";
+  return "OK|" + platform + " overlay on|" + warn;
+}
+
+function ppHide() {
+  var seq = ppSeq();
+  if (!seq) return szErr("Open a sequence and click on its timeline first.");
+  var ls = ppOverlayClips(seq), i;
+  for (i = 0; i < ls.length; i++) ls[i].clip.disabled = true;
+  return "OK|Overlay hidden (clip disabled, will not export)";
+}
+
+function ppRemove() {
+  var seq = ppSeq();
+  if (!seq) return szErr("Open a sequence and click on its timeline first.");
+  var ls = ppOverlayClips(seq), i;
+  for (i = ls.length - 1; i >= 0; i--) ls[i].clip.remove(false, false);
+  return "OK|Overlay removed";
+}
+
+function ppStatus() {
+  var seq = ppSeq();
+  if (!seq) return "OK|none";
+  var ls = ppOverlayClips(seq);
+  if (!ls.length) return "OK|none";
+  return "OK|" + szParse(ls[0].clip.name) + "|" + (ls[0].clip.disabled ? "0" : "1");
+}
+
+/* ---------------- Entry points called by the panel ---------------- */
+
+// Active comp / sequence size, so the panel can pick portrait or landscape. "OK|w|h"
+function szSize() {
+  try {
+    if (szIsAE()) { var c = aeComp(); return c ? "OK|" + c.width + "|" + c.height : szErr("Open a composition and click on it first."); }
+    var seq = ppSeq(); if (!seq) return szErr("Open a sequence and click on its timeline first.");
+    var sz = ppSeqSize(seq); return "OK|" + sz[0] + "|" + sz[1];
+  } catch (e) { return szErr(e.toString()); }
+}
+// filePath: full path of a SAFEZONE_<platform>_<variant>_<orientation>.png written by the panel
+function szShow(filePath) {
+  try { return szIsAE() ? aeShow(filePath) : ppShow(filePath); }
+  catch (e) { return szErr(e.toString()); }
+}
+function szHide() {
+  try { return szIsAE() ? aeHide() : ppHide(); } catch (e) { return szErr(e.toString()); }
+}
+function szRemove() {
+  try { return szIsAE() ? aeRemove() : ppRemove(); } catch (e) { return szErr(e.toString()); }
+}
+function szStatus() {
+  try { return szIsAE() ? aeStatus() : ppStatus(); } catch (e) { return szErr(e.toString()); }
+}
