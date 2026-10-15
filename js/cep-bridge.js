@@ -25,14 +25,30 @@ var Bridge = (function () {
     if (!cep) return "none";
     try { return JSON.parse(cep.getHostEnvironment()).appName; } catch (e) { return "unknown"; }
   }
-  // Write a PNG (base64 data URL) into the user's data folder, return the file path or "".
+  // Write a PNG (base64 data URL) to disk, return the file path or "".
+  // Premiere and After Effects can disagree about which folders are writable, so try several.
+  var lastError = "";
   function writePng(dataUrl, fileName) {
-    if (!cep || !window.cep || !window.cep.fs) return "";
-    var base = sysPath("userData");
-    var dir = base + "/SafeZonePanel";
-    window.cep.fs.makedir(dir);
-    var r = window.cep.fs.writeFile(dir + "/" + fileName, dataUrl.replace(/^data:image\/png;base64,/, ""), window.cep.encoding.Base64);
-    return r && r.err === 0 ? dir + "/" + fileName : "";
+    lastError = "";
+    if (!cep) { lastError = "no host"; return ""; }
+    var fs = window.cep && window.cep.fs;
+    if (!fs) { lastError = "cep.fs missing"; return ""; }
+    var data = dataUrl.replace(/^data:image\/png;base64,/, "");
+    var types = ["userData", "myDocuments", "commonFiles", "hostApplication", "extension"], tried = [];
+    for (var i = 0; i < types.length; i++) {
+      var base;
+      try { base = sysPath(types[i]); } catch (e) { tried.push(types[i] + ":nopath"); continue; }
+      if (!base) { tried.push(types[i] + ":empty"); continue; }
+      if (types[i] === "hostApplication") base = base.replace(/[\/\\][^\/\\]*$/, ""); // folder of the .exe
+      var dir = base + "/SafeZonePanel";
+      var m = fs.makedir(base); // make sure the parent exists
+      var m2 = fs.makedir(dir);
+      var r = fs.writeFile(dir + "/" + fileName, data, window.cep.encoding.Base64);
+      if (r && r.err === 0) return dir + "/" + fileName;
+      tried.push(types[i] + ":mk" + (m2 && m2.err) + "/w" + (r && r.err));
+    }
+    lastError = tried.join(" ");
+    return "";
   }
-  return { writePng: writePng, hasHost: !!cep, evalScript: evalScript, extensionPath: extensionPath, hostName: hostName };
+  return { writePng: writePng, lastError: function () { return lastError; }, hasHost: !!cep, evalScript: evalScript, extensionPath: extensionPath, hostName: hostName };
 })();
