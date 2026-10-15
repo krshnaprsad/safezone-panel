@@ -1,8 +1,24 @@
 /* Draws a safe-zone overlay on a canvas. Portrait = 1080x1920. Landscape = 1920x1080 with the
    9:16 frame centred at full height and the rest dimmed. Transparent background. */
 var Overlay = (function () {
-  var SHADE = "rgba(255,64,96,0.29)", OUTSIDE = "rgba(0,0,0,0.47)";
-  var LINE = "rgba(255,255,255,0.92)", LINE_SHADOW = "rgba(0,0,0,0.6)", PILL = "rgba(20,20,24,0.67)";
+  var OUTSIDE = "rgba(0,0,0,0.47)", PILL = "rgba(20,20,24,0.67)";
+  var SHADE, LINE, LINE_SHADOW, UI_LINE, UI_SHADOW, UI_FILL;
+
+  // color: "#rrggbb" or null for the default look (pink shading, white wireframe).
+  function setPalette(color) {
+    var m = /^#?([0-9a-f]{6})$/i.exec(color || "");
+    function rgba(r, g, b, a) { return "rgba(" + r + "," + g + "," + b + "," + a + ")"; }
+    if (!m) {
+      SHADE = rgba(255, 64, 96, 0.29); LINE = UI_LINE = rgba(255, 255, 255, 0.92);
+      LINE_SHADOW = UI_SHADOW = rgba(0, 0, 0, 0.85); UI_FILL = rgba(0, 0, 0, 0.22); return;
+    }
+    var n = parseInt(m[1], 16), r = n >> 16 & 255, g = n >> 8 & 255, b = n & 255;
+    var lum = (0.299 * r + 0.587 * g + 0.114 * b) / 255;
+    var edge = lum > 0.5 ? [0, 0, 0] : [255, 255, 255];   // contrasting edge so it reads on any footage
+    SHADE = rgba(r, g, b, 0.30); LINE = UI_LINE = rgba(r, g, b, 0.95);
+    LINE_SHADOW = UI_SHADOW = rgba(edge[0], edge[1], edge[2], 0.75);
+    UI_FILL = rgba(edge[0], edge[1], edge[2], 0.10);
+  }
 
   function polygon(z, FW, FH) {
     var L = z.left, T = z.top, R = FW - z.right, B = FH - z.bottom;
@@ -13,8 +29,9 @@ var Overlay = (function () {
     return [[L, T], [R, T], [R, B], [L, B]];
   }
 
-  function render(platform, variant, landscape, style) {
+  function render(platform, variant, landscape, style, color) {
     style = style || "zones";
+    setPalette(color);
     var FW = ZONES.frame[0], FH = ZONES.frame[1];
     var p = ZONES.platforms[platform], z = p[variant];
     var s = landscape ? 1080 / FH : 1, cw = landscape ? 1920 : FW, ch = landscape ? 1080 : FH;
@@ -62,7 +79,6 @@ var Overlay = (function () {
   }
 
   /* ---- App UI wireframes (approximate positions on 1080x1920) ---- */
-  var UI_LINE = "rgba(255,255,255,0.9)", UI_SHADOW = "rgba(0,0,0,0.55)", UI_FILL = "rgba(0,0,0,0.18)";
 
   function drawUI(g, platform, X, Y, s, FW, FH) {
     var lw = Math.max(1.5, 3 * s);
@@ -151,21 +167,24 @@ var Overlay = (function () {
     }
 
     if (platform === "reels") {
-      // Positions taken from a real Reels screenshot (right rail, avatar row, location tag).
-      var rx = 1000;
-      function count(cy, w) { rrect(rx - w / 2, cy + 52, w, 26, 13); }
-      heart(rx, 1014); count(1014, 78);
-      bubble(rx, 1166); count(1166, 70);
-      repost(rx, 1328); count(1328, 56);
-      plane(rx, 1473);
-      bookmark(rx, 1592); count(1592, 70);
-      line(rx - 24, 1700, rx + 24, 1700); line(rx - 24, 1730, rx + 24, 1730);   // menu
-      rrect(rx - 36, 1790, 72, 72, 14);                                          // audio thumbnail
-      rrect(41, 1596, 242, 71, 20);                                              // location tag
-      circle(102, 1757, 45);                                                     // avatar
-      rrect(173, 1737, 240, 40, 20); circle(436, 1757, 14);                      // username, verified
-      rrect(490, 1727, 157, 60, 16);                                             // follow
-      lines(41, 1835, [640, 420], 44);                                           // caption
+      // Traced from a real Reels screenshot (718x1599 phone screen). The reel fills the area between
+      // the status bar (y 83) and the nav bar (y 1497) and is centre-cropped to fill it, so one
+      // uniform scale maps screen px to the 1080x1920 frame: f = 1920 / 1414.
+      var f = FH / 1414;
+      var fx = function (x) { return (x - 359) * f + FW / 2; }, fy = function (y) { return (y - 83) * f; };
+      var rcx = fx(666);
+      function pill(cy, w) { rrect(rcx - w * f / 2, fy(cy) - 8 * f, w * f, 16 * f, 8 * f); }
+      heart(rcx, fy(831.5)); pill(879.5, 56);
+      bubble(rcx, fy(942.5)); pill(991.5, 46);
+      repost(rcx, fy(1054)); pill(1103, 36);
+      plane(rcx, fy(1167.5));
+      bookmark(rcx, fy(1255.5)); pill(1303, 50);
+      line(rcx - 15 * f, fy(1347), rcx + 15 * f, fy(1347)); line(rcx - 15 * f, fy(1357), rcx + 15 * f, fy(1357)); // menu
+      rrect(fx(662) - 22 * f, fy(1425) - 22 * f, 44 * f, 44 * f, 9 * f);                  // audio thumbnail
+      rrect(fx(27), fy(1258), 161 * f, 52 * f, 14 * f);                                   // location tag
+      circle(fx(64), fy(1372), 33 * f);                                                   // avatar
+      rrect(fx(115), fy(1360), 160 * f, 29 * f, 14 * f); circle(fx(292), fy(1374), 9 * f); // username, verified
+      rrect(fx(326), fy(1355), 104 * f, 43 * f, 10 * f);                                  // follow
     } else if (platform === "tiktok") {
       // Rail x 918-1080, y 730-1536 and bottom block y 1570-1920: CapQA measurements of the organic layout.
       var tx = 999;
