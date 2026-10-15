@@ -167,24 +167,33 @@ var Overlay = (function () {
       rrect(490, 1727, 157, 60, 16);                                             // follow
       lines(41, 1835, [640, 420], 44);                                           // caption
     } else if (platform === "tiktok") {
-      line(FW / 2 - 200, 130, FW / 2 - 200, 130); rrect(FW / 2 - 290, 100, 200, 56, 12); rrect(FW / 2 - 40, 100, 150, 56, 12); // tabs
-      circle(FW - 70, 128, 30);                                          // search
-      circle(950, 930, 48);                                              // creator avatar
-      var ty = [1075, 1215, 1355, 1495];
-      railItem(950, ty[0], "heart"); railItem(950, ty[1], "comment"); railItem(950, ty[2], "save"); railItem(950, ty[3], "share");
-      disc(950, 1650, 54);                                               // sound disc
-      rrect(40, 1585, 300, 44, 22);                                      // username
-      lines(40, 1665, [560, 400], 46);                                   // description
-      rrect(40, 1760, 380, 40, 20);                                      // sound row
-      navBar(1810, 5);
+      // Rail x 918-1080, y 730-1536 and bottom block y 1570-1920: CapQA measurements of the organic layout.
+      var tx = 999;
+      rrect(FW / 2 - 290, 100, 200, 56, 12); rrect(FW / 2 - 40, 100, 150, 56, 12); // Following / For You tabs
+      circle(FW - 70, 128, 30);                                                   // search
+      circle(tx, 800, 48);                                                        // creator avatar
+      heart(tx, 925); rrect(tx - 34, 975, 68, 26, 13);
+      bubble(tx, 1055); rrect(tx - 30, 1105, 60, 26, 13);
+      bookmark(tx, 1185); rrect(tx - 30, 1235, 60, 26, 13);
+      plane(tx, 1315); rrect(tx - 30, 1365, 60, 26, 13);
+      disc(tx, 1470, 50);                                                         // sound disc
+      rrect(40, 1600, 300, 44, 22);                                               // username
+      lines(40, 1672, [600, 440], 46);                                            // description
+      rrect(40, 1770, 400, 40, 20);                                               // sound row
+      navBar(1840, 5);
     } else {
-      circle(FW - 250, 118, 30); circle(FW - 160, 118, 30); dots(FW - 70, 118, true); // search, camera, more
-      var sy = [1130, 1290, 1450, 1610];
-      railItem(985, sy[0], "up"); railItem(985, sy[1], "down"); railItem(985, sy[2], "comment"); railItem(985, sy[3], "share");
-      disc(985, 1760, 40);                                               // remix / sound
-      circle(80, 1640, 36); rrect(135, 1620, 240, 40, 20); rrect(395, 1612, 170, 56, 28); // channel, subscribe
-      lines(40, 1735, [620, 380], 46);                                   // title
-      line(0, 1895, FW, 1895);                                           // progress bar
+      // Traced from a real Shorts screenshot. The top search/menu icons and the title sit in the
+      // black bars outside the 9:16 video, so they are not drawn.
+      var sx = 998;
+      function cnt(cy, w) { rrect(sx - w / 2, cy + 40, w, 26, 13); }
+      heart(sx, 1167); cnt(1167, 70);
+      bubble(sx, 1320); cnt(1320, 40);
+      bookmark(sx, 1473); cnt(1473, 64);
+      plane(sx, 1628); cnt(1628, 70);
+      repost(sx, 1778); cnt(1778, 74);
+      circle(80, 1895, 41);                                                        // channel avatar
+      rrect(142, 1879, 220, 40, 20);                                               // @handle
+      rrect(382, 1857, 188, 80, 40);                                               // subscribe
     }
   }
 
