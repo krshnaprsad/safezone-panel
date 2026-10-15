@@ -100,7 +100,8 @@ function aeShow(filePath) {
     layer.name = "SAFEZONE " + platform + " (guide)";
     try { layer.comment = name; } catch (e1) {}
     step = "guide layer";
-    layer.guideLayer = true;      // guide layers do not render by default
+    layer.guideLayer = true;      // AVLayer.guideLayer: guide layers do not render
+    if (layer.guideLayer !== true) throw new Error("After Effects refused to turn the layer into a guide layer");
     step = "timing";
     try { layer.inPoint = 0; layer.outPoint = comp.duration; } catch (e2) {}
     try { layer.moveToBeginning(); } catch (e3) {}
@@ -115,7 +116,7 @@ function aeShow(filePath) {
     step = "tidy project";
     try { aeCleanUnused(name); } catch (e6) {}
     app.endUndoGroup();
-    return "OK|" + platform + " overlay on (guide layer)|";
+    return "OK|" + platform + " overlay on (guide layer, verified: it will not render)|";
   } catch (e) {
     if (started) { try { app.endUndoGroup(); } catch (e5) {} }
     return szErr("[" + step + "] " + e.toString() + " (line " + e.line + ")");
@@ -154,13 +155,23 @@ function aeStatus() {
 
 function ppSeq() { return app.project ? app.project.activeSequence : null; }
 
+var SZ_WARN_NAME = "!! SAFEZONE - HIDE BEFORE EXPORT !!";
+// The clip gets renamed, so recognise it by its project item (SAFEZONE_*.png) or its warning name.
+function ppSrcName(clip) {
+  try { if (clip.projectItem && clip.projectItem.name) return String(clip.projectItem.name); } catch (e) {}
+  return String(clip.name || "");
+}
+function ppIsOverlay(clip) {
+  return ppSrcName(clip).indexOf(SZ_PREFIX) === 0 || String(clip.name || "") === SZ_WARN_NAME;
+}
+
 function ppOverlayClips(seq) {
   var out = [], t, c;
   for (t = 0; t < seq.videoTracks.numTracks; t++) {
     var tr = seq.videoTracks[t];
     for (c = 0; c < tr.clips.numItems; c++) {
       var clip = tr.clips[c];
-      if (clip.name && clip.name.indexOf(SZ_PREFIX) === 0) out.push({ track: tr, index: t, clip: clip });
+      if (ppIsOverlay(clip)) out.push({ track: tr, index: t, clip: clip });
     }
   }
   return out;
@@ -211,6 +222,7 @@ function ppShow(filePath) {
     item = ppFindItem(app.project.rootItem, name);
   }
   if (!item) return szErr("Could not import the overlay into the project.");
+  try { item.setColorLabel(1); } catch (el) {} // bright label colour on the project item (and its clip)
 
   if (!track) {
     // Try to add a fresh top video track so nothing of yours gets overwritten.
@@ -233,6 +245,7 @@ function ppShow(filePath) {
   if (placed) {
     try { var t = new Time(); t.ticks = seq.end; placed.end = t; } catch (e3) {}
     placed.disabled = false;
+    try { placed.name = SZ_WARN_NAME; } catch (en) {}
     try {
       var comps = placed.components, ci, pi;
       for (ci = 0; ci < comps.numItems; ci++) {
@@ -244,7 +257,7 @@ function ppShow(filePath) {
       }
     } catch (e4) {}
   }
-  warn += (warn ? " " : "") + "Premiere has no guide layers: click the button again to hide the overlay before you export.";
+  warn += (warn ? " " : "") + "WARNING: Premiere has no guide layers. This overlay WILL RENDER in your export unless you click the button again to hide it. The clip is named HIDE BEFORE EXPORT.";
   return "OK|" + platform + " overlay on|" + warn;
 }
 
@@ -269,7 +282,7 @@ function ppStatus() {
   if (!seq) return "OK|none";
   var ls = ppOverlayClips(seq);
   if (!ls.length) return "OK|none";
-  return "OK|" + szParse(ls[0].clip.name) + "|" + (ls[0].clip.disabled ? "0" : "1");
+  return "OK|" + szParse(ppSrcName(ls[0].clip)) + "|" + (ls[0].clip.disabled ? "0" : "1");
 }
 
 /* ---------------- Entry points called by the panel ---------------- */
