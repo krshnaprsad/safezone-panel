@@ -3,7 +3,8 @@
 
 var SZ_PREFIX = "SAFEZONE_";
 
-function szIsAE() { return app.name.indexOf("After Effects") !== -1; }
+// Premiere has no CompItem class; After Effects does. (app.name is not reliable in AE.)
+function szIsAE() { return typeof CompItem !== "undefined"; }
 
 function szErr(m) { return "ERR|" + m; }
 
