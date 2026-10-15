@@ -20,12 +20,16 @@
     preview.src = Overlay.render(selected, variant.value, false, styleSel.value).toDataURL("image/png");
   }
 
+  window.onerror = function (msg) { setStatus("Something went wrong."); setWarn("Panel error: " + msg); };
+
   function run(fn, args, done) {
     var call = fn + "(" + args.join(",") + ")";
     Bridge.evalScript(call, function (res) {
       res = String(res || "");
       var parts = res.split("|");
-      if (parts[0] === "OK") { done(parts.slice(1)); }
+      if (parts[0] === "OK") {
+        try { done(parts.slice(1)); } catch (e) { setStatus("Something went wrong."); setWarn("Panel error: " + e.message); }
+      }
       else { setStatus("Something went wrong."); setWarn(parts.slice(1).join("|") || res); }
     });
   }
