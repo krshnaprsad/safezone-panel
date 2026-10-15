@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Safe Zones</title>
+<link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+<header>
+  <span class="title">Safe Zones</span>
+  <span id="host" class="badge">-</span>
+</header>
+
+<div class="preview"><img id="preview" alt="Overlay preview"></div>
+
+<section class="buttons">
+  <button class="plat" data-p="reels"><i></i>Reels</button>
+  <button class="plat" data-p="tiktok"><i></i>TikTok</button>
+  <button class="plat" data-p="shorts"><i></i>Shorts</button>
+</section>
+
+<section class="opts">
+  <label for="variant">Zones</label>
+  <select id="variant">
+    <option value="official">Official ad guide (safest)</option>
+    <option value="organic">Organic, measured in app</option>
+  </select>
+</section>
+
+<section class="actions">
+  <button id="remove" class="ghost">Remove overlay</button>
+</section>
+
+<p id="status" class="status">Ready.</p>
+<p id="warn" class="warn"></p>
+
+<script src="js/zones.js"></script>
+<script src="js/overlay.js"></script>
+<script src="js/cep-bridge.js"></script>
+<script src="js/main.js"></script>
+</body>
+</html>
