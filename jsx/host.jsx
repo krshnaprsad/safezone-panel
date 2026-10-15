@@ -25,8 +25,9 @@ function aeComp() {
 function aeOverlayLayers(comp) {
   var out = [], i;
   for (i = 1; i <= comp.numLayers; i++) {
-    var l = comp.layer(i);
-    if (l.comment && l.comment.indexOf(SZ_PREFIX) === 0) out.push(l);
+    var l = comp.layer(i), cm = "";
+    try { cm = String(l.comment); } catch (e) { cm = ""; }
+    if (cm.indexOf(SZ_PREFIX) === 0) out.push(l);
   }
   return out;
 }
@@ -42,34 +43,48 @@ function aeFootage(file) {
 }
 
 function aeShow(filePath) {
+  var step = "start";
   var comp = aeComp();
   if (!comp) return szErr("Open a composition and click on it first.");
-  var name = szBaseName(filePath);
-  var platform = szParse(name).split("|")[0];
-  var file = new File(filePath);
-  if (!file.exists) return szErr("Overlay file missing: " + file.fsName);
-  app.beginUndoGroup("Safe zone overlay");
+  var started = false;
   try {
+    step = "read file name";
+    var name = szBaseName(filePath);
+    var platform = szParse(name).split("|")[0];
+    step = "find file";
+    var file = new File(filePath);
+    if (!file.exists) return szErr("Overlay file missing: " + file.fsName);
+    app.beginUndoGroup("Safe zone overlay");
+    started = true;
+    step = "remove old overlay";
     var old = aeOverlayLayers(comp), i;
     for (i = old.length - 1; i >= 0; i--) { old[i].locked = false; old[i].remove(); }
+    step = "import image";
     var item = aeFootage(file);
+    if (!item) throw new Error("import returned nothing");
+    step = "add layer";
     var layer = comp.layers.add(item);
+    step = "name layer";
     layer.name = "SAFEZONE " + platform + " (guide)";
-    layer.comment = name;
+    try { layer.comment = name; } catch (e1) {}
+    step = "guide layer";
     layer.guideLayer = true;      // guide layers do not render by default
-    layer.inPoint = 0;
-    layer.outPoint = comp.duration;
-    layer.moveToBeginning();
+    step = "timing";
+    try { layer.inPoint = 0; layer.outPoint = comp.duration; } catch (e2) {}
+    try { layer.moveToBeginning(); } catch (e3) {}
+    step = "scale";
     var s = 100 * comp.height / item.height;
-    layer.property("Transform").property("Scale").setValue([s, s]);
-    layer.property("Transform").property("Position").setValue([comp.width / 2, comp.height / 2]);
-    layer.locked = true;
+    var tg = layer.property("ADBE Transform Group");
+    tg.property("ADBE Scale").setValue([s, s]);
+    tg.property("ADBE Position").setValue([comp.width / 2, comp.height / 2]);
+    step = "lock";
+    try { layer.locked = true; } catch (e4) {}
     layer.enabled = true;
     app.endUndoGroup();
     return "OK|" + platform + " overlay on (guide layer)|";
   } catch (e) {
-    app.endUndoGroup();
-    return szErr(e.toString());
+    if (started) { try { app.endUndoGroup(); } catch (e5) {} }
+    return szErr("[" + step + "] " + e.toString() + " (line " + e.line + ")");
   }
 }
 
@@ -96,7 +111,7 @@ function aeStatus() {
   if (!comp) return "OK|none";
   var ls = aeOverlayLayers(comp);
   if (!ls.length) return "OK|none";
-  return "OK|" + szParse(ls[0].comment) + "|" + (ls[0].enabled ? "1" : "0");
+  return "OK|" + szParse(String(ls[0].comment)) + "|" + (ls[0].enabled ? "1" : "0");
 }
 
 /* ---------------- Premiere Pro ---------------- */
@@ -216,19 +231,19 @@ function szSize() {
     if (szIsAE()) { var c = aeComp(); return c ? "OK|" + c.width + "|" + c.height : szErr("Open a composition and click on it first."); }
     var seq = ppSeq(); if (!seq) return szErr("Open a sequence and click on its timeline first.");
     var sz = ppSeqSize(seq); return "OK|" + sz[0] + "|" + sz[1];
-  } catch (e) { return szErr(e.toString()); }
+  } catch (e) { return szErr(e.toString() + " (line " + e.line + ")"); }
 }
 // filePath: full path of a SAFEZONE_<platform>_<variant>_<orientation>.png written by the panel
 function szShow(filePath) {
   try { return szIsAE() ? aeShow(filePath) : ppShow(filePath); }
-  catch (e) { return szErr(e.toString()); }
+  catch (e) { return szErr(e.toString() + " (line " + e.line + ")"); }
 }
 function szHide() {
-  try { return szIsAE() ? aeHide() : ppHide(); } catch (e) { return szErr(e.toString()); }
+  try { return szIsAE() ? aeHide() : ppHide(); } catch (e) { return szErr(e.toString() + " (line " + e.line + ")"); }
 }
 function szRemove() {
-  try { return szIsAE() ? aeRemove() : ppRemove(); } catch (e) { return szErr(e.toString()); }
+  try { return szIsAE() ? aeRemove() : ppRemove(); } catch (e) { return szErr(e.toString() + " (line " + e.line + ")"); }
 }
 function szStatus() {
-  try { return szIsAE() ? aeStatus() : ppStatus(); } catch (e) { return szErr(e.toString()); }
+  try { return szIsAE() ? aeStatus() : ppStatus(); } catch (e) { return szErr(e.toString() + " (line " + e.line + ")"); }
 }
