@@ -50,5 +50,16 @@ var Bridge = (function () {
     lastError = tried.join(" ");
     return "";
   }
-  return { writePng: writePng, lastError: function () { return lastError; }, hasHost: !!cep, evalScript: evalScript, extensionPath: extensionPath, hostName: hostName };
+  // Delete older generations of an overlay file (keeps the folder small). Best effort.
+  function cleanOld(keepPath, prefix) {
+    try {
+      var fs = window.cep.fs, dir = keepPath.replace(/[\/\\][^\/\\]*$/, ""), keep = keepPath.replace(/^.*[\/\\]/, "");
+      var l = fs.readdir(dir);
+      if (!l || l.err !== 0) return;
+      for (var i = 0; i < l.data.length; i++) {
+        if (l.data[i].indexOf(prefix) === 0 && l.data[i] !== keep) fs.deleteFile(dir + "/" + l.data[i]);
+      }
+    } catch (e) {}
+  }
+  return { cleanOld: cleanOld, writePng: writePng, lastError: function () { return lastError; }, hasHost: !!cep, evalScript: evalScript, extensionPath: extensionPath, hostName: hostName };
 })();
