@@ -36,14 +36,14 @@ let w = aeWorld(1080, 1920);
 let c = sandbox(w.app, w.extra);
 assert.strictEqual(c.szShow(png("SAFEZONE_reels_official_portrait.png")), "OK|reels overlay on (guide layer)|");
 assert.strictEqual(w.layers.length, 1); assert.ok(w.layers[0].guideLayer); assert.ok(w.layers[0].comment.includes("reels_official_portrait"));
-assert.strictEqual(w.layers[0].props.Scale.v[0], 100);
+assert.strictEqual(w.layers[0].props["ADBE Scale"].v[0], 100);
 assert.strictEqual(c.szStatus(), "OK|reels|official|1");
 c.szShow(png("SAFEZONE_tiktok_organic_portrait.png")); assert.strictEqual(w.layers.length, 1); assert.strictEqual(c.szStatus(), "OK|tiktok|organic|1");
 c.szHide(); assert.strictEqual(c.szStatus(), "OK|tiktok|organic|0");
 c.szRemove(); assert.strictEqual(w.layers.length, 0); assert.strictEqual(c.szStatus(), "OK|none");
 // landscape comp 3840x2160 -> scale 200, landscape file
 w = aeWorld(3840, 2160); c = sandbox(w.app, w.extra); c.szShow(png("SAFEZONE_shorts_official_landscape.png"));
-assert.ok(w.layers[0].comment.includes("landscape")); assert.strictEqual(w.layers[0].props.Scale.v[0], 200);
+assert.ok(w.layers[0].comment.includes("landscape")); assert.strictEqual(w.layers[0].props["ADBE Scale"].v[0], 200);
 // no comp
 w = aeWorld(10, 10); w.app.project.activeItem = null; c = sandbox(w.app, w.extra); assert.ok(c.szShow(png("SAFEZONE_reels_official_portrait.png")).startsWith("ERR|"));
 
