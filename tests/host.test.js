@@ -74,6 +74,10 @@ assert.strictEqual(p.tracks[1].clips._a[0].projectItem.name, "SAFEZONE_tiktok_of
 assert.strictEqual(c.szStatus(), "OK|tiktok|official|1");
 c.szHide(); assert.strictEqual(c.szStatus(), "OK|tiktok|official|0");
 c.szShow(png("SAFEZONE_reels_official_landscape.png")); assert.strictEqual(p.tracks[1].clips._a.length, 1); assert.strictEqual(p.tracks.length, 2);
+// user adds a track above the overlay, re-show must land on the new top track
+p.tracks.push((function(){ const t = { clips: { _a: [], get numItems() { return this._a.length; } } }; t.overwriteClip = p.tracks[0].overwriteClip; t.clips = new Proxy(t.clips, { get: (o, k) => (k in o ? o[k] : o._a[k]) }); return t; })());
+c.szShow(png("SAFEZONE_reels_official_landscape.png"));
+assert.strictEqual(p.tracks[p.tracks.length - 1].clips._a.length, 1);
 c.szRemove(); assert.strictEqual(c.szStatus(), "OK|none");
 console.log("host.jsx logic tests passed");
 { const w2 = aeWorld(1080, 1920); const c2 = sandbox(w2.app, w2.extra); assert.strictEqual(c2.szSize(), "OK|1080|1920"); }
