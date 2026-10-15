@@ -43,10 +43,10 @@
     });
   }
 
-  function onPlatform(p) {
+  function onPlatform(p, force) {
     selected = p; refreshPreview(); setWarn("");
     if (!Bridge.hasHost) { active = (active === p) ? null : p; refreshButtons(); setStatus(active ? "Demo: overlay would be shown." : "Demo: overlay would be hidden."); return; }
-    if (active === p) {
+    if (active === p && !force) {
       run("szHide", [], function () { active = null; refreshButtons(); setStatus("Overlay hidden."); });
       return;
     }
@@ -88,6 +88,10 @@
   styleSel.addEventListener("change", onStyleOrVariant);
   colorSel.addEventListener("change", onColor);
   hexIn.addEventListener("change", onStyleOrVariant);
+  $("#front").addEventListener("click", function () {
+    if (!active) { setStatus("Turn an overlay on first."); return; }
+    onPlatform(active, true); // re-places the overlay as the top layer / top track
+  });
   $("#remove").addEventListener("click", function () {
     if (!Bridge.hasHost) { active = null; refreshButtons(); setStatus("Demo: overlay removed."); return; }
     run("szRemove", [], function (r) { active = null; refreshButtons(); setStatus(r[0] || "Overlay removed."); });
