@@ -8,6 +8,10 @@ A small panel for **Adobe Premiere Pro** and **After Effects** that shows where 
 - **Premiere Pro:** the overlay is placed on a new top video track. Premiere has no guide layers, so click the button again to hide it (the clip is disabled and will not export). **Hide it before you export.** The clip is named `!! SAFEZONE - HIDE BEFORE EXPORT !!`, gets a red project label, and the panel shows a flashing red banner while it is on. Adobe gives plug-ins no way to hook the start of an export, so nothing can block or warn at export time. This is a limit of Premiere, not something we can add.
 - Works on vertical sequences (1080x1920) and on 16:9 sequences (the 9:16 frame is drawn centred, with the outside dimmed).
 
+## Why I built Safezone Panel
+
+When I design for social media, I need to know where the like button, the share button and the other platform elements will sit over my work. I kept having to go back and forth, checking my design again and again on a mockup. So I thought, why not automate it, with a layout guide right inside After Effects and Premiere Pro. That is how Safezone Panel started.
+
 ## What the overlay shows
 
 Red shading is the area the app covers. The white outline is the safe area. Numbers are pixel margins on a 1080x1920 frame.
